@@ -123,6 +123,18 @@
             color: #2c3e50;
             min-height: 1.6em;
         }
+
+        /* Estilos para el Modal */
+        /* La clase 'hidden' de Tailwind controla la visibilidad. Estas clases manejan la transición. */
+        #modalContent {
+             opacity: 0;
+             transform: scale(0.9);
+             transition: all 0.3s ease-out;
+        }
+        .modal-visible #modalContent {
+             opacity: 1;
+             transform: scale(1);
+        }
     </style>
 </head>
 <body>
@@ -139,7 +151,17 @@
         <p id="result" class="result">Presiona **GIRAR** para empezar</p>
     </div>
 
-    <!-- El Modal de Resultado ha sido eliminado. -->
+    <!-- Modal de Resultado (reincorporado y oculto por defecto) -->
+    <div id="resultModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div id="modalContent" class="bg-white p-8 rounded-xl shadow-2xl text-center w-full max-w-sm">
+            <h2 class="text-3xl font-extrabold text-blue-600 mb-4">¡EL GANADOR ES!</h2>
+            <p class="text-xl text-gray-700 mb-2">El número seleccionado es:</p>
+            <div id="winnerNumber" class="text-7xl font-black text-red-600 my-6">--</div>
+            <button id="closeModalButton" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg shadow-lg transition-colors duration-200">
+                Aceptar y Continuar
+            </button>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -147,7 +169,11 @@
             const spinButton = document.getElementById('spinButton');
             const resultDisplay = document.getElementById('result');
             
-            // Las referencias y la lógica del Modal han sido eliminadas.
+            // Referencias del Modal reincorporadas
+            const resultModal = document.getElementById('resultModal');
+            const modalContent = document.getElementById('modalContent');
+            const winnerNumberDisplay = document.getElementById('winnerNumber');
+            const closeModalButton = document.getElementById('closeModalButton');
 
 
             // 1. Configuración de la Ruleta y Constantes
@@ -159,7 +185,6 @@
 
             // Parámetros de la Animación (Controlados por JS)
             const MAX_SPEED = 20; // Grados por frame (aprox 1200 deg/s)
-            const MIN_SPEED = 0.05; // Velocidad mínima de detección de parada (ya no se usa pero se mantiene por convención)
             const MINIMUM_FAST_SPIN_DURATION_MS = 3200; // 4 giros rápidos
             const DECELEATION_TIME_MS = 8000; // Duración total de la desaceleración
 
@@ -172,7 +197,7 @@
             let targetRotation = 0;
             let targetWinningIndex = -1;
             
-            // Nuevas variables para la lógica de desaceleración suave (FIX)
+            // Variables para la lógica de desaceleración suave
             let initialDecelerationRotation = 0;
             let totalDecelerationDistance = 0;
 
@@ -191,6 +216,16 @@
             wheelCanvas.style.transform = `rotate(${accumulatedRotation}deg)`;
 
             /**
+             * Muestra el modal con el número ganador.
+             */
+            function showWinnerModal(winnerIndex) {
+                winnerNumberDisplay.textContent = labels[winnerIndex];
+                resultModal.classList.remove('hidden');
+                resultModal.classList.add('modal-visible');
+            }
+
+
+            /**
              * Bucle principal de animación (requestAnimationFrame)
              */
             function animateSpin(timestamp) {
@@ -203,7 +238,7 @@
                     if (timeElapsed < 500) { 
                          // Aceleración rápida por 0.5s
                          spinSpeed = Math.min(MAX_SPEED, spinSpeed + 2);
-                         resultDisplay.textContent = '¡Acelerando! 🚀';
+                         // resultDisplay.textContent = '¡Acelerando! 🚀'; // ELIMINADO
                     } else if (timeElapsed >= MINIMUM_FAST_SPIN_DURATION_MS) {
                         // Iniciar la desaceleración
                         isDecelerating = true;
@@ -220,24 +255,24 @@
                         
                         let degreesToTargetNormalized = (TargetStopPosition - currentRotationNormalized + totalAngle) % totalAngle;
                         
-                        // Aumento de vueltas a 20 para garantizar una desaceleración lenta y suave (FIX)
+                        // Aumento de vueltas a 20 para garantizar una desaceleración lenta y suave
                         const extraRotationsDegrees = 20 * totalAngle; 
                         
                         targetRotation = accumulatedRotation + extraRotationsDegrees + degreesToTargetNormalized;
                         
-                        initialDecelerationRotation = accumulatedRotation; // Anclaje de posición inicial (FIX)
-                        totalDecelerationDistance = targetRotation - initialDecelerationRotation; // Distancia total a recorrer (FIX)
+                        initialDecelerationRotation = accumulatedRotation; // Anclaje de posición inicial
+                        totalDecelerationDistance = targetRotation - initialDecelerationRotation; // Distancia total a recorrer
                         
                         startTime = timestamp; // Resetear tiempo para la fase de desaceleración
-                        resultDisplay.textContent = '¡Desacelerando! 🐢';
+                        // resultDisplay.textContent = '¡Desacelerando! 🐢'; // ELIMINADO
                     } else {
                         // Giro a velocidad máxima
                         spinSpeed = MAX_SPEED; 
-                        resultDisplay.textContent = '¡Giro Rápido! 💨';
+                        // resultDisplay.textContent = '¡Giro Rápido! 💨'; // ELIMINADO
                     }
                 }
 
-                // --- FASE 2: Desaceleración Controlada por Easing (FIX) ---
+                // --- FASE 2: Desaceleración Controlada por Easing ---
                 if (isDecelerating) {
                     const decelerationElapsed = timestamp - startTime;
                     
@@ -248,8 +283,9 @@
                         wheelCanvas.style.transform = `rotate(${accumulatedRotation}deg)`;
                         spinButton.disabled = false;
                         
-                        // Mostrar Resultado Final en el display de texto
-                        resultDisplay.textContent = `¡El número ganador es el ${labels[targetWinningIndex]}! 🎉`;
+                        // Mostrar Resultado Final en el modal
+                        resultDisplay.textContent = `¡Giro Completo!`;
+                        showWinnerModal(targetWinningIndex);
 
                         return; 
                     }
@@ -259,7 +295,7 @@
                     // Fórmula de ease-out suave (potencia cúbica)
                     let easingValue = 1 - Math.pow(1 - timeRatio, 3); 
                     
-                    // Calcular la nueva posición de rotación usando el easing (Ahora es por posición, no por velocidad)
+                    // Calcular la nueva posición de rotación usando el easing
                     const newRotation = initialDecelerationRotation + (totalDecelerationDistance * easingValue);
 
                     // Aplicar la rotación
@@ -282,6 +318,10 @@
             spinButton.addEventListener('click', () => {
                 if (isSpinning) return;
                 
+                // Ocultar modal si está abierto
+                resultModal.classList.add('hidden');
+                resultModal.classList.remove('modal-visible');
+
                 // Inicializar variables de estado
                 isSpinning = true;
                 isDecelerating = false;
@@ -290,10 +330,17 @@
                 
                 // Deshabilitar el botón y empezar
                 spinButton.disabled = true;
+                resultDisplay.textContent = 'Girando...'; // Muestra un estado simple mientras gira
                 requestAnimationFrame(animateSpin);
             });
             
-            // La lógica para cerrar el modal se elimina al eliminar el modal.
+            // --- Evento Cerrar Modal ---
+            closeModalButton.addEventListener('click', () => {
+                resultModal.classList.add('hidden');
+                resultModal.classList.remove('modal-visible');
+                // Al cerrar el modal, restaurar el mensaje de inicio
+                resultDisplay.textContent = 'Presiona **GIRAR** para empezar'; 
+            });
         });
     </script>
 </body>

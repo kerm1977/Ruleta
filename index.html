@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta de Premios 0-99</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración para usar la fuente Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    </style>
+    <!-- Carga de Chart.js y datalabels -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    
+    <style>
+        /* Estilos CSS personalizados (Ahora SÓLO de presentación) */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #eef2f5;
+        }
+
+        .container {
+            text-align: center;
+            padding: 25px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+            max-width: 90%;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            margin: 20px auto;
+            border-radius: 50%;
+            box-shadow: 0 0 0 10px #f1c40f, 0 0 30px rgba(0,0,0,0.1); /* Borde decorativo */
+        }
+        
+        @media (min-width: 600px) {
+            .wheel-container {
+                width: 450px;
+                height: 450px;
+            }
+        }
+
+        #prizeWheel {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 50%;
+            transform-origin: center center;
+            /* La rotación ahora es 100% controlada por JS, no por CSS */
+            transition: none !important;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -2px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #e74c3c; /* Indicador */
+            z-index: 10;
+            filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.4));
+        }
+
+        /* Estilos de botones mejorados con Tailwind-like look & feel */
+        #spinButton, #stopButton {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            border: none;
+            transition: all 0.2s ease-in-out;
+            border-bottom: 4px solid;
+        }
+
+        #spinButton {
+            background-color: #3498db;
+            border-color: #2980b9;
+        }
+        
+        #spinButton:hover:not(:disabled) {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        #stopButton {
+            /* Ocultamos el botón Detener ya que la parada es automática */
+            display: none !important; 
+        }
+
+        #spinButton:disabled {
+            background-color: #95a5a6;
+            border-color: #7f8c8d;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 1.6em;
+            font-weight: 900;
+            color: #2c3e50;
+            min-height: 1.6em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>¡Gira la Ruleta de Premios!</h1>
+        <div class="wheel-container">
+            <canvas id="prizeWheel"></canvas>
+            <div class="pointer"></div>
+        </div>
+        <div>
+            <button id="spinButton" class="rounded-lg shadow-md">GIRAR</button>
+            <button id="stopButton" class="rounded-lg shadow-md">DETENER</button> 
+        </div>
+        <p id="result" class="result">Presiona **GIRAR** para empezar</p>
+    </div>
+
+    <!-- El Modal de Resultado ha sido eliminado. -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wheelCanvas = document.getElementById('prizeWheel');
+            const spinButton = document.getElementById('spinButton');
+            const resultDisplay = document.getElementById('result');
+            
+            // Las referencias y la lógica del Modal han sido eliminadas.
+
+
+            // 1. Configuración de la Ruleta y Constantes
+            const totalSectors = 100;
+            const labels = Array.from({ length: totalSectors }, (_, i) => i.toString());
+            const sectorAngle = 360 / totalSectors; // 3.6 grados por sector
+            const totalAngle = 360;
+            const initialOffset = sectorAngle / 2; // 1.8 grados
+
+            // Parámetros de la Animación (Controlados por JS)
+            const MAX_SPEED = 20; // Grados por frame (aprox 1200 deg/s)
+            const MIN_SPEED = 0.05; // Velocidad mínima de detección de parada (ya no se usa pero se mantiene por convención)
+            const MINIMUM_FAST_SPIN_DURATION_MS = 3200; // 4 giros rápidos
+            const DECELEATION_TIME_MS = 8000; // Duración total de la desaceleración
+
+            // Estado de la Animación
+            let accumulatedRotation = -initialOffset; 
+            let spinSpeed = 0;
+            let isSpinning = false;
+            let isDecelerating = false;
+            let startTime = 0;
+            let targetRotation = 0;
+            let targetWinningIndex = -1;
+            
+            // Nuevas variables para la lógica de desaceleración suave (FIX)
+            let initialDecelerationRotation = 0;
+            let totalDecelerationDistance = 0;
+
+
+            // Inicializar Chart.js
+            const backgroundColors = [];
+            const colorPalette = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
+            for (let i = 0; i < totalSectors; i++) {
+                backgroundColors.push(colorPalette[i % colorPalette.length]);
+            }
+            const data = { labels, datasets: [{ data: Array(totalSectors).fill(1), backgroundColor: backgroundColors, borderColor: '#fff', borderWidth: 1 }] };
+            const config = { type: 'pie', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, anchor: 'end', align: 'start', offset: 4, formatter: (value, context) => labels[context.dataIndex] } }, animation: { duration: 0 } }, plugins: [ChartDataLabels] };
+            const prizeWheel = new Chart(wheelCanvas, config);
+
+            // Rotación inicial CW para centrar el sector 0.
+            wheelCanvas.style.transform = `rotate(${accumulatedRotation}deg)`;
+
+            /**
+             * Bucle principal de animación (requestAnimationFrame)
+             */
+            function animateSpin(timestamp) {
+                if (!isSpinning) return;
+                
+                const timeElapsed = timestamp - startTime;
+
+                // --- FASE 1: Aceleración / Giro Constante ---
+                if (!isDecelerating) {
+                    if (timeElapsed < 500) { 
+                         // Aceleración rápida por 0.5s
+                         spinSpeed = Math.min(MAX_SPEED, spinSpeed + 2);
+                         resultDisplay.textContent = '¡Acelerando! 🚀';
+                    } else if (timeElapsed >= MINIMUM_FAST_SPIN_DURATION_MS) {
+                        // Iniciar la desaceleración
+                        isDecelerating = true;
+                        
+                        // Capturar el ganador y calcular la rotación final
+                        targetWinningIndex = Math.floor(Math.random() * totalSectors);
+
+                        // Lógica para calcular el ángulo final de aterrizaje (CW)
+                        const angleToShowWinner = (totalAngle - (targetWinningIndex * sectorAngle) - initialOffset) % totalAngle;
+                        const TargetStopPosition = (angleToShowWinner + totalAngle) % totalAngle;
+                        
+                        let currentRotationNormalized = accumulatedRotation % totalAngle;
+                        if (currentRotationNormalized < 0) currentRotationNormalized += totalAngle;
+                        
+                        let degreesToTargetNormalized = (TargetStopPosition - currentRotationNormalized + totalAngle) % totalAngle;
+                        
+                        // Aumento de vueltas a 20 para garantizar una desaceleración lenta y suave (FIX)
+                        const extraRotationsDegrees = 20 * totalAngle; 
+                        
+                        targetRotation = accumulatedRotation + extraRotationsDegrees + degreesToTargetNormalized;
+                        
+                        initialDecelerationRotation = accumulatedRotation; // Anclaje de posición inicial (FIX)
+                        totalDecelerationDistance = targetRotation - initialDecelerationRotation; // Distancia total a recorrer (FIX)
+                        
+                        startTime = timestamp; // Resetear tiempo para la fase de desaceleración
+                        resultDisplay.textContent = '¡Desacelerando! 🐢';
+                    } else {
+                        // Giro a velocidad máxima
+                        spinSpeed = MAX_SPEED; 
+                        resultDisplay.textContent = '¡Giro Rápido! 💨';
+                    }
+                }
+
+                // --- FASE 2: Desaceleración Controlada por Easing (FIX) ---
+                if (isDecelerating) {
+                    const decelerationElapsed = timestamp - startTime;
+                    
+                    // 1. Detenerse si el tiempo ha terminado
+                    if (decelerationElapsed >= DECELEATION_TIME_MS) {
+                        isSpinning = false;
+                        accumulatedRotation = targetRotation; // Bloquear exactamente al objetivo
+                        wheelCanvas.style.transform = `rotate(${accumulatedRotation}deg)`;
+                        spinButton.disabled = false;
+                        
+                        // Mostrar Resultado Final en el display de texto
+                        resultDisplay.textContent = `¡El número ganador es el ${labels[targetWinningIndex]}! 🎉`;
+
+                        return; 
+                    }
+                    
+                    const timeRatio = decelerationElapsed / DECELEATION_TIME_MS; 
+                    
+                    // Fórmula de ease-out suave (potencia cúbica)
+                    let easingValue = 1 - Math.pow(1 - timeRatio, 3); 
+                    
+                    // Calcular la nueva posición de rotación usando el easing (Ahora es por posición, no por velocidad)
+                    const newRotation = initialDecelerationRotation + (totalDecelerationDistance * easingValue);
+
+                    // Aplicar la rotación
+                    accumulatedRotation = newRotation;
+                }
+                
+                // Si aún no está desacelerando, aplicar la velocidad (FASE 1)
+                if (!isDecelerating) {
+                    accumulatedRotation += spinSpeed;
+                }
+
+                wheelCanvas.style.transform = `rotate(${accumulatedRotation}deg)`;
+
+                // Continuar bucle
+                requestAnimationFrame(animateSpin);
+            }
+
+
+            // --- Evento GIRAR ---
+            spinButton.addEventListener('click', () => {
+                if (isSpinning) return;
+                
+                // Inicializar variables de estado
+                isSpinning = true;
+                isDecelerating = false;
+                spinSpeed = 0;
+                startTime = performance.now();
+                
+                // Deshabilitar el botón y empezar
+                spinButton.disabled = true;
+                requestAnimationFrame(animateSpin);
+            });
+            
+            // La lógica para cerrar el modal se elimina al eliminar el modal.
+        });
+    </script>
+</body>
+</html>

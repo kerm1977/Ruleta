@@ -19,39 +19,40 @@
         body {
             font-family: 'Inter', sans-serif;
             display: flex;
+            flex-direction: column; /* Cambiado a columna para centrar verticalmente */
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #eef2f5;
+            background-color: #ffffff; /* Fondo blanco */
+            padding: 25px; /* Añadir padding general para evitar que el contenido toque los bordes */
         }
 
-        .container {
-            text-align: center;
-            padding: 25px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
-            max-width: 90%;
-        }
+        /* El contenedor .container ha sido eliminado */
 
         h1 {
             color: #2c3e50;
             font-size: 1.8em;
             margin-bottom: 15px;
+            text-align: center;
         }
 
         .wheel-container {
             position: relative;
-            width: 350px;
-            height: 350px;
+            /* Usa unidades relativas al viewport para responsividad */
+            width: 85vw; /* Aumentado para ocupar más pantalla en móvil */
+            height: 85vw;
+            max-width: 450px; /* Limita el tamaño máximo en pantallas grandes */
+            max-height: 450px;
             margin: 20px auto;
             border-radius: 50%;
-            box-shadow: 0 0 0 10px #f1c40f, 0 0 30px rgba(0,0,0,0.1); /* Borde decorativo */
+            /* Mantenemos un borde dorado para darle un buen look sin la 'card' */
+            box-shadow: 0 0 0 10px #f1c40f, 0 8px 15px rgba(0,0,0,0.1); 
         }
         
         @media (min-width: 600px) {
             .wheel-container {
+                /* Asegura que el tamaño se fija al max-width en desktop */
                 width: 450px;
                 height: 450px;
             }
@@ -62,7 +63,6 @@
             max-height: 100%;
             border-radius: 50%;
             transform-origin: center center;
-            /* La rotación ahora es 100% controlada por JS, no por CSS */
             transition: none !important;
         }
 
@@ -90,6 +90,7 @@
             border: none;
             transition: all 0.2s ease-in-out;
             border-bottom: 4px solid;
+            margin-top: 20px;
         }
 
         #spinButton {
@@ -104,7 +105,6 @@
         }
 
         #stopButton {
-            /* Ocultamos el botón Detener ya que la parada es automática */
             display: none !important; 
         }
 
@@ -122,10 +122,10 @@
             font-weight: 900;
             color: #2c3e50;
             min-height: 1.6em;
+            text-align: center;
         }
 
         /* Estilos para el Modal */
-        /* La clase 'hidden' de Tailwind controla la visibilidad. Estas clases manejan la transición. */
         #modalContent {
              opacity: 0;
              transform: scale(0.9);
@@ -138,14 +138,17 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    
+    <!-- Contenido de la ruleta (previamente en .container) -->
+    <div class="w-full max-w-lg mx-auto p-4 flex flex-col items-center">
         <h1>¡Gira la Ruleta de Premios!</h1>
         <div class="wheel-container">
             <canvas id="prizeWheel"></canvas>
             <div class="pointer"></div>
         </div>
-        <div>
-            <button id="spinButton" class="rounded-lg shadow-md">GIRAR</button>
+        <!-- Cambio CLAVE: Añadir text-center para centrar el botón horizontalmente -->
+        <div class="w-full text-center"> 
+            <button id="spinButton" class="rounded-lg shadow-md w-3/4 max-w-xs">GIRAR</button>
             <button id="stopButton" class="rounded-lg shadow-md">DETENER</button> 
         </div>
         <p id="result" class="result">Presiona **GIRAR** para empezar</p>
@@ -238,7 +241,6 @@
                     if (timeElapsed < 500) { 
                          // Aceleración rápida por 0.5s
                          spinSpeed = Math.min(MAX_SPEED, spinSpeed + 2);
-                         // resultDisplay.textContent = '¡Acelerando! 🚀'; // ELIMINADO
                     } else if (timeElapsed >= MINIMUM_FAST_SPIN_DURATION_MS) {
                         // Iniciar la desaceleración
                         isDecelerating = true;
@@ -264,11 +266,9 @@
                         totalDecelerationDistance = targetRotation - initialDecelerationRotation; // Distancia total a recorrer
                         
                         startTime = timestamp; // Resetear tiempo para la fase de desaceleración
-                        // resultDisplay.textContent = '¡Desacelerando! 🐢'; // ELIMINADO
                     } else {
                         // Giro a velocidad máxima
                         spinSpeed = MAX_SPEED; 
-                        // resultDisplay.textContent = '¡Giro Rápido! 💨'; // ELIMINADO
                     }
                 }
 
@@ -284,7 +284,7 @@
                         spinButton.disabled = false;
                         
                         // Mostrar Resultado Final en el modal
-                        resultDisplay.textContent = `¡Giro Completo!`;
+                        resultDisplay.textContent = `¡El número ganador es el ${labels[targetWinningIndex]}! 🎉`;
                         showWinnerModal(targetWinningIndex);
 
                         return; 

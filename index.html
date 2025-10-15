@@ -2,57 +2,60 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>Ruleta de Premios 0-99</title>
-    <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configuración para usar la fuente Inter -->
     <style>
+        /* Se añade una regla general para un mejor box-model en móviles */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
     </style>
-    <!-- Carga de Chart.js y datalabels -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
     
     <style>
-        /* Estilos CSS personalizados (Ahora SÓLO de presentación) */
+        /* Estilos CSS personalizados para móvil y responsividad */
         body {
             font-family: 'Inter', sans-serif;
             display: flex;
-            flex-direction: column; /* Cambiado a columna para centrar verticalmente */
-            justify-content: center;
+            flex-direction: column;
+            justify-content: flex-start; /* Cambio: Empezar desde arriba para evitar que el teclado virtual lo tape */
             align-items: center;
             min-height: 100vh;
+            /* CLAVE MÓVIL: Usar 'dvh' para un mejor manejo en navegadores móviles (si es compatible) */
+            min-height: 100dvh; 
             margin: 0;
-            background-color: #ffffff; /* Fondo blanco */
-            padding: 25px; /* Añadir padding general para evitar que el contenido toque los bordes */
+            background-color: #ffffff;
+            padding: 20px 10px; /* Reducción de padding horizontal para mejor aprovechamiento */
         }
 
-        /* El contenedor .container ha sido eliminado */
-
+        /* CLAVE MÓVIL: Reducción del tamaño del encabezado en móvil para ahorrar espacio */
         h1 {
             color: #2c3e50;
-            font-size: 1.8em;
-            margin-bottom: 15px;
+            font-size: 1.5em; /* Reducido de 1.8em a 1.5em */
+            margin-top: 10px; /* Añadido un pequeño margen superior */
+            margin-bottom: 10px;
             text-align: center;
+            font-weight: 900;
         }
 
         .wheel-container {
             position: relative;
-            /* Usa unidades relativas al viewport para responsividad */
-            width: 85vw; /* Aumentado para ocupar más pantalla en móvil */
-            height: 85vw;
-            max-width: 450px; /* Limita el tamaño máximo en pantallas grandes */
+            /* CLAVE MÓVIL: Se mantiene el 85vw pero se añade un 'aspect-ratio' explícito 1/1 para mejor compatibilidad */
+            width: 85vw; 
+            aspect-ratio: 1 / 1;
+            max-width: 450px;
             max-height: 450px;
-            margin: 20px auto;
+            margin: 10px auto; /* Reducido el margen vertical para ahorrar espacio */
             border-radius: 50%;
-            /* Mantenemos un borde dorado para darle un buen look sin la 'card' */
-            box-shadow: 0 0 0 10px #f1c40f, 0 8px 15px rgba(0,0,0,0.1); 
+            box-shadow: 0 0 0 8px #f1c40f, 0 6px 12px rgba(0,0,0,0.15); /* Sutilmente reducido */
         }
         
         @media (min-width: 600px) {
             .wheel-container {
-                /* Asegura que el tamaño se fija al max-width en desktop */
                 width: 450px;
                 height: 450px;
             }
@@ -73,24 +76,26 @@
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 30px solid #e74c3c; /* Indicador */
+            border-left: 14px solid transparent; /* Reducido para un look más limpio */
+            border-right: 14px solid transparent; /* Reducido para un look más limpio */
+            border-top: 28px solid #e74c3c; /* Reducido para un look más limpio */
             z-index: 10;
-            filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.4));
+            filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.4)); /* Sutilmente reducido */
         }
 
         /* Estilos de botones mejorados con Tailwind-like look & feel */
         #spinButton, #stopButton {
-            padding: 15px 30px;
-            font-size: 1.2em;
-            font-weight: bold;
+            padding: 12px 25px; /* Reducido ligeramente el padding */
+            font-size: 1.1em; /* Reducido ligeramente el tamaño de la fuente */
+            font-weight: 700; /* Reducido de 'bold' a 700 para mantener consistencia con Inter */
             cursor: pointer;
             color: white;
             border: none;
             transition: all 0.2s ease-in-out;
-            border-bottom: 4px solid;
-            margin-top: 20px;
+            border-bottom: 3px solid; /* Reducido de 4px a 3px */
+            margin-top: 15px; /* Reducido de 20px a 15px */
+            width: 90%; /* Aumentado para ocupar más ancho en móvil */
+            max-width: 350px; /* Nuevo límite para el botón */
         }
 
         #spinButton {
@@ -117,19 +122,23 @@
         }
 
         .result {
-            margin-top: 20px;
-            font-size: 1.6em;
+            margin-top: 15px; /* Reducido de 20px a 15px */
+            font-size: 1.4em; /* Reducido de 1.6em a 1.4em */
             font-weight: 900;
             color: #2c3e50;
-            min-height: 1.6em;
+            min-height: 1.4em;
             text-align: center;
         }
 
-        /* Estilos para el Modal */
+        /* Mejoras al Modal para móvil */
+        /* Eliminamos el padding del CSS porque la clase p-4 en el HTML lo maneja */
+        /* #resultModal { padding: 10px; } */ 
+        
         #modalContent {
              opacity: 0;
              transform: scale(0.9);
              transition: all 0.3s ease-out;
+             /* Eliminamos max-width: 95%; para usar w-full de Tailwind */
         }
         .modal-visible #modalContent {
              opacity: 1;
@@ -139,27 +148,37 @@
 </head>
 <body>
     
-    <!-- Contenido de la ruleta (previamente en .container) -->
-    <div class="w-full max-w-lg mx-auto p-4 flex flex-col items-center">
+    <div class="w-full max-w-lg mx-auto p-2 flex flex-col items-center">
         <h1>¡Gira la Ruleta de Premios!</h1>
         <div class="wheel-container">
             <canvas id="prizeWheel"></canvas>
             <div class="pointer"></div>
         </div>
-        <!-- Cambio CLAVE: Añadir text-center para centrar el botón horizontalmente -->
+        
         <div class="w-full text-center"> 
-            <button id="spinButton" class="rounded-lg shadow-md w-3/4 max-w-xs">GIRAR</button>
+            <button id="spinButton" class="rounded-lg shadow-md">GIRAR</button>
             <button id="stopButton" class="rounded-lg shadow-md">DETENER</button> 
         </div>
-        <p id="result" class="result">Presiona **GIRAR** para empezar</p>
+        <p id="result" class="result font-extrabold">Presiona **GIRAR** para empezar</p>
     </div>
 
-    <!-- Modal de Resultado (reincorporado y oculto por defecto) -->
+    <!-- 
+        CONTENEDOR DEL MODAL:
+        - fixed inset-0: Ocupa toda la pantalla
+        - flex items-center justify-center: CENTRA el contenido horizontal y verticalmente
+        - p-4: Asegura un margen alrededor del modal en móviles
+    -->
     <div id="resultModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center p-4 z-50 transition-opacity duration-300">
-        <div id="modalContent" class="bg-white p-8 rounded-xl shadow-2xl text-center w-full max-w-sm">
-            <h2 class="text-3xl font-extrabold text-blue-600 mb-4">¡EL GANADOR ES!</h2>
-            <p class="text-xl text-gray-700 mb-2">El número seleccionado es:</p>
-            <div id="winnerNumber" class="text-7xl font-black text-red-600 my-6">--</div>
+        <!-- 
+            CONTENIDO DEL MODAL (Caja Blanca):
+            - w-full: Ocupa todo el ancho disponible (esencial para móvil)
+            - max-w-sm: Limita el ancho en escritorio
+            - mx-auto: Centra el contenido dentro del flexbox (aunque items-center/justify-center ya lo hacen, esto asegura)
+        -->
+        <div id="modalContent" class="bg-white p-6 rounded-xl shadow-2xl text-center w-full max-w-sm mx-auto">
+            <h2 class="text-2xl font-extrabold text-blue-600 mb-4">¡EL GANADOR ES!</h2>
+            <p class="text-lg text-gray-700 mb-2">El número seleccionado es:</p>
+            <div id="winnerNumber" class="text-6xl font-black text-red-600 my-4">--</div>
             <button id="closeModalButton" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg shadow-lg transition-colors duration-200">
                 Aceptar y Continuar
             </button>
@@ -172,24 +191,24 @@
             const spinButton = document.getElementById('spinButton');
             const resultDisplay = document.getElementById('result');
             
-            // Referencias del Modal reincorporadas
+            // Referencias del Modal
             const resultModal = document.getElementById('resultModal');
             const modalContent = document.getElementById('modalContent');
             const winnerNumberDisplay = document.getElementById('winnerNumber');
             const closeModalButton = document.getElementById('closeModalButton');
 
 
-            // 1. Configuración de la Ruleta y Constantes
+            // 1. Configuración de la Ruleta y Constantes (Sin cambios en la lógica)
             const totalSectors = 100;
             const labels = Array.from({ length: totalSectors }, (_, i) => i.toString());
-            const sectorAngle = 360 / totalSectors; // 3.6 grados por sector
+            const sectorAngle = 360 / totalSectors;
             const totalAngle = 360;
-            const initialOffset = sectorAngle / 2; // 1.8 grados
+            const initialOffset = sectorAngle / 2;
 
             // Parámetros de la Animación (Controlados por JS)
-            const MAX_SPEED = 20; // Grados por frame (aprox 1200 deg/s)
-            const MINIMUM_FAST_SPIN_DURATION_MS = 3200; // 4 giros rápidos
-            const DECELEATION_TIME_MS = 8000; // Duración total de la desaceleración
+            const MAX_SPEED = 20;
+            const MINIMUM_FAST_SPIN_DURATION_MS = 3200;
+            const DECELEATION_TIME_MS = 8000;
 
             // Estado de la Animación
             let accumulatedRotation = -initialOffset; 
@@ -211,8 +230,30 @@
             for (let i = 0; i < totalSectors; i++) {
                 backgroundColors.push(colorPalette[i % colorPalette.length]);
             }
+            // CLAVE MÓVIL: Se ajusta el tamaño de fuente de los datalabels para móvil
             const data = { labels, datasets: [{ data: Array(totalSectors).fill(1), backgroundColor: backgroundColors, borderColor: '#fff', borderWidth: 1 }] };
-            const config = { type: 'pie', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, anchor: 'end', align: 'start', offset: 4, formatter: (value, context) => labels[context.dataIndex] } }, animation: { duration: 0 } }, plugins: [ChartDataLabels] };
+            const config = { 
+                type: 'pie', 
+                data, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { display: false }, 
+                        tooltip: { enabled: false }, 
+                        datalabels: { 
+                            color: '#fff', 
+                            font: { weight: 'bold', size: 8 }, 
+                            anchor: 'end', 
+                            align: 'start', 
+                            offset: 2, 
+                            formatter: (value, context) => labels[context.dataIndex] 
+                        } 
+                    }, 
+                    animation: { duration: 0 } 
+                }, 
+                plugins: [ChartDataLabels] 
+            }; 
             const prizeWheel = new Chart(wheelCanvas, config);
 
             // Rotación inicial CW para centrar el sector 0.
@@ -224,7 +265,8 @@
             function showWinnerModal(winnerIndex) {
                 winnerNumberDisplay.textContent = labels[winnerIndex];
                 resultModal.classList.remove('hidden');
-                resultModal.classList.add('modal-visible');
+                // Añadir la clase para la animación de entrada
+                resultModal.classList.add('modal-visible'); 
             }
 
 
@@ -262,10 +304,10 @@
                         
                         targetRotation = accumulatedRotation + extraRotationsDegrees + degreesToTargetNormalized;
                         
-                        initialDecelerationRotation = accumulatedRotation; // Anclaje de posición inicial
-                        totalDecelerationDistance = targetRotation - initialDecelerationRotation; // Distancia total a recorrer
+                        initialDecelerationRotation = accumulatedRotation;
+                        totalDecelerationDistance = targetRotation - initialDecelerationRotation; 
                         
-                        startTime = timestamp; // Resetear tiempo para la fase de desaceleración
+                        startTime = timestamp;
                     } else {
                         // Giro a velocidad máxima
                         spinSpeed = MAX_SPEED; 
@@ -279,7 +321,7 @@
                     // 1. Detenerse si el tiempo ha terminado
                     if (decelerationElapsed >= DECELEATION_TIME_MS) {
                         isSpinning = false;
-                        accumulatedRotation = targetRotation; // Bloquear exactamente al objetivo
+                        accumulatedRotation = targetRotation;
                         wheelCanvas.style.transform = `rotate(${accumulatedRotation}deg)`;
                         spinButton.disabled = false;
                         
@@ -330,7 +372,7 @@
                 
                 // Deshabilitar el botón y empezar
                 spinButton.disabled = true;
-                resultDisplay.textContent = 'Girando...'; // Muestra un estado simple mientras gira
+                resultDisplay.textContent = 'Girando...';
                 requestAnimationFrame(animateSpin);
             });
             
